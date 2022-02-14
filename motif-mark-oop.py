@@ -1,4 +1,5 @@
 import cairo
+import bioinfo
 
 # test_mode=False
 # def get_args():
@@ -9,6 +10,9 @@ import cairo
 #     parser.add_argument('-u', '--umi', help='name of umi file')
 #     return parser.parse_args()
 # args=get_args()
+
+fasta_dictionary=bioinfo.fasta_reader('test.fa')
+print(fasta_dictionary)
 
 length_of_contig=12000
 
@@ -36,8 +40,6 @@ def normalize(exons, surface_width):
             round(surface_width * exons[key][1]/length_of_contig, 0)
             )
 
-
-
 def draw_intron(start, stop, level):
     '''draws introns on cairo surface.
     input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
@@ -61,6 +63,7 @@ surface_width = 100
 surface_height = 100
 
 normalize(exons, surface_width)
+
 with cairo.SVGSurface('example.svg', surface_width, surface_height) as surface:
     c = cairo.Context(surface)
     level=surface_height/2
