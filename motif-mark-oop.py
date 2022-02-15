@@ -7,6 +7,7 @@ def get_args():
 	#parser.add_argument('- command line variable', '-- python variable', description)
     parser.add_argument('-f', '--fasta_file', help='input fasta file to be mapped')
     parser.add_argument('-e', '--exon_file', help='input exon file. exon file should be sequences of exons sorted by new lines')
+    parser.add_argument('-o', '--output_file', help='input output png file name')
     return parser.parse_args()
 args=get_args()
 
@@ -16,9 +17,7 @@ def exons_builder(file, contig):
     '''generates a list of exons sorted by start and stop relative to the input contif
     input: a text file with exon seqeuences seperated by new lines
     return: a sorted list of exons as described below'''
-    exons = {
-        # exon number: (start position, stop position)
-        }
+
     with open(file) as e:
         list_of_exons = e.read().splitlines()
         exons=[]
@@ -46,7 +45,7 @@ region_dictionary ={
 }
 
 for key in fasta_dictionary:
-    x = region(fasta_dictionary[key],'exons.txt')
+    x = region(fasta_dictionary[key], args.exon_file)
     region_dictionary[key]= (x.length, x.exons)
 
 
@@ -131,4 +130,4 @@ with cairo.SVGSurface('example.svg', surface_width, surface_height) as surface:
         draw_region(region_dictionary[key][1], level)
 
 
-    surface.write_to_png('test.png')
+    surface.write_to_png(args.output_file)
