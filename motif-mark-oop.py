@@ -33,16 +33,7 @@ fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 #     return(exons)
 
 
-# def draw_intron(start, stop, level):
-#     '''draws introns on cairo surface.
-#     input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
-#     output: a line representing intron, proportional to actual intron'''
 
-#     c.line_to(start, level)
-#     c.line_to(stop,level)
-#     c.set_source_rgb(1, 0, 0)
-#     c.set_line_width(1)
-#     c.stroke()
 
 
 
@@ -91,42 +82,69 @@ class region:
     - .length: length of contig
     - .exons: list of exons (start pos, stop pos) ordered by start pos
     input: contig sequence and exon file'''
-    __slots__ = ['contig', 'length', 'exons']
+    __slots__ = ['contig', 'length', 'exons','introns']
 
     def find_exons(self):
         i=0
         exons = []
         while True:
+            # update index of contig while the contig is lowercase (intron)
+            # once the contig is no longer lowercase record index as start of exon
             try:
                 while self.contig[i].islower():
                     i+=1
+            # if the contig is over, break
             except IndexError:
                 break
             start=i
-            
+            # update index of contig while the contig is uppercase (exon)
+            # once the contig is no longer uppercase record index as finish of exon
             try:
                 while self.contig[i].isupper():
                     i+=1
+            # if the contig is over, record the final position as exon stop and break
             except IndexError:
-                stop=i
+                stop=i-1
                 exons.append([start,stop])
                 break
-            stop=i
-            
+            stop=i-1
             exons.append([start,stop])
         return(exons)
-   
+
+    def find_introns(self):
+        introns=[]
+        for pos in self.exons:
+            if pos[0] == 0:
+                pass
+            else:
+                
+            
+                
+
+
     def __init__(self, contig):
         self.contig = contig
-        # self.length=len(contig)
+        self.length=len(contig)
         self.exons = self.find_exons()
-        pass
+        self.introns = self.find_features()[1]
 
-    def draw_intron(self):
-        pass
 
-print(region(fasta_dictionary['>test']).exons)
+    # def draw_intron(self, level):
+    #     '''draws introns on cairo surface.
+    #     input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
+    #     output: a line representing intron, proportional to actual intron'''
 
+    #     c.line_to(start, level)
+    #     c.line_to(stop,level)
+    #     c.set_source_rgb(1, 0, 0)
+    #     c.set_line_width(1)
+    #     c.stroke()
+
+gene = region(fasta_dictionary['>test'])
+ex = gene.exons
+intr = gene.introns
+print(gene.contig[ ex[0][1] ])
+print(gene.contig[ intr[0][0] ])
 
 # region_dictionary ={
 #     # contig header: ( contig_length, exon_dictionary generated from exons builder )
