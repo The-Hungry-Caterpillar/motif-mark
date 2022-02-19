@@ -37,36 +37,11 @@ fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 
 
 
-# def draw_exon(start, stop, level):
-#     '''draws exons on cairo surface.
-#     input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
-#     output: a rectangle proportional to actual exon'''
-
-#     c.rectangle(start, level-scale/4, stop-start, 2*scale/4)
-#     c.set_source_rgb(0, .5, .5)
-#     c.fill()
 
 
 
-# def draw_region(exons, level):
-    # '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
-    # input: exon, likely from a 'region.exons' object'''
 
-    # c.move_to(0, level)
-    # draw_intron(0, exons[0][0], level)
-    # for i in range( 0, len(exons) ): 
-       
-    #    # not all exons matched to the contig, this loop skips such exons
-    #     if -1 in exons[i]:
-    #         place = c.get_current_point()
-    #         draw_intron(place[0], exons[i+1][0], level)
 
-    #     else:
-    #         try:
-    #             draw_exon(exons[i][0], exons[i][1] , level)
-    #             draw_intron(exons[i][1], exons[i+1][0], level)
-    #         except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-    #             draw_intron(exons[i][1], surface_width, level)
 
 intron1='atgtccacatgtagtcacgtttgacatcccagggccacctcagcaggccgtctctggggagaattttctctgatttcttccccttcccttgctggacccctgcacctgctggggaagatgtagctcactccgtctagcaagtgatgggagcgagtggtccagggtcaaagccagggtgcccttactcggacacatgtggcctccaagtgtcagagcccagtggtctgtctaatgaagttccctctgtcctcaaaggcgttggttttgtttccacag'
 exon1='AAAAACCTCTTCAGGCACTGGTGCCGAGGACCCTAG'
@@ -76,13 +51,25 @@ print(f'intron 1 start = 0, stop = {len(intron1)}')
 print(f'exon 1 start = {len(intron1)}, stop = {len(intron1)+len(exon1)}')
 print(f'intron 2 start = {len(intron1)+len(exon1)}, stop = {len(intron1)+len(exon1)+len(intron2)}')
 
+
+
 class region:
     '''creates an object called region consisting of:
     - .contig: contig sequence
     - .length: length of contig
     - .exons: list of exons (start pos, stop pos) ordered by start pos
     input: contig sequence and exon file'''
-    __slots__ = ['contig', 'length', 'exons','introns']
+    __slots__ = ['contig', 'length', 'exons','introns', 'surface_width', 'surface_height', 'level', 'header']
+
+    def __init__(self, header, contig):
+        self.header = header
+        self.contig = contig
+        self.length=len(contig)
+        self.exons = self.find_exons()
+        self.introns = self.find_exons()
+        self.surface_width = 100 
+        self.surface_height = 100
+        self.level=50
 
     def find_exons(self):
         i=0
@@ -110,41 +97,144 @@ class region:
             stop=i-1
             exons.append([start,stop])
         return(exons)
+          
+    def draw_intron(self, start, stop, c):
+        '''draws introns on cairo surface.
+        input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
+        output: a line representing intron, proportional to actual intron'''
 
-    def find_introns(self):
-        introns=[]
-        for pos in self.exons:
-            if pos[0] == 0:
-                pass
-            else:
+        c.line_to(start, self.level)
+        c.line_to(stop, self.level)
+        c.set_source_rgb(1, 0, 0)
+        c.set_line_width(1)
+        c.stroke()
+
+    def draw_exon(self, start, stop, c):
+        '''draws exons on cairo surface.
+        input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
+        output: a rectangle proportional to actual exon'''
+
+        c.rectangle(start, self.level-5, stop-start, 10)
+        c.set_source_rgb(0, .5, .5)
+        c.fill()
+
+    def normalize(self):
+        '''function that transforms exon genome coordinates into cairo coordinates
+        input: exon dictionary, cairo surface width
+        output: exon dictionary with transformed coordinates'''
+
+        # transform exon list
+        for i in range(0,len(self.exons)):
+            self.exons[i] = (
+                round(self.surface_width * self.exons[i][0]/self.length, 0),
+                round(self.surface_width * self.exons[i][1]/self.length, 0)
+                )
+
+    def draw_region(self): #currently not working
+        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
+        input: exon, likely from a 'region.exons' object'''
+
+        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
+            c = cairo.Context(surface)
+            c.move_to(0, self.level)
+
+            for i in range( 0, len(self.exons) ): 
                 
+                if self.exons[0][0] == 0:
+                    pass
+               
+                else:
+                    
+                    self.draw_intron(0, self.exons[0][0], c)
+
+                    # not all exons matched to the contig, this loop skips such exons
+                    if -1 in self.exons[i]:
+                        place = c.get_current_point()
+                        self.draw_intron(place[0], self.exons[i+1][0], c)
+                    
+                    else:
+                        try:
+                            self.draw_exon(self.exons[i][0], self.exons[i][1], c)
+                            self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
+                        
+                        except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                            self.draw_intron(self.exons[i][1], self.surface_width, c)
             
+            surface.write_to_png(self.header + '.png')
+
+
+class draw:
+    def __init__(self):
+        self.surface_height = 100
+        self.surface_width = 100
+        self.level = 50 
+
+    def draw_intron(self, start, stop, c):
+        '''draws introns on cairo surface.
+        input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
+        output: a line representing intron, proportional to actual intron'''
+
+        c.line_to(start, self.level)
+        c.line_to(stop, self.level)
+        c.set_source_rgb(1, 0, 0)
+        c.set_line_width(1)
+        c.stroke()
+
+    def draw_exon(self, start, stop, c):
+        '''draws exons on cairo surface.
+        input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
+        output: a rectangle proportional to actual exon'''
+
+        c.rectangle(start, self.level-10, stop-start, 10)
+        c.set_source_rgb(0, .5, .5)
+        c.fill()
+
+    def draw_region(self, header, exons): #currently not working
+        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
+        input: exon, likely from a 'region.exons' object'''
+
+        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
+            c = cairo.Context(surface)
+            c.move_to(0, self.level)
+
+            for i in range( 0, len(exons) ): 
                 
+                if exons[0][0] == 0:
+                    pass
+               
+                else:
+                    
+                    self.draw_intron(0, exons[0][0], c)
+
+                    # not all exons matched to the contig, this loop skips such exons
+                    if -1 in exons[i]:
+                        place = c.get_current_point()
+                        self.draw_intron(place[0], exons[i+1][0], c)
+                    
+                    else:
+                        try:
+                            self.draw_exon(exons[i][0], exons[i][1], c)
+                            self.draw_intron(exons[i][1], exons[i+1][0], c)
+                        
+                        except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                            self.draw_intron(exons[i][1], self.surface_width, c)
+            
+            surface.write_to_png(header + '.png')
 
 
-    def __init__(self, contig):
-        self.contig = contig
-        self.length=len(contig)
-        self.exons = self.find_exons()
-        self.introns = self.find_features()[1]
-
-
-    # def draw_intron(self, level):
-    #     '''draws introns on cairo surface.
-    #     input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
-    #     output: a line representing intron, proportional to actual intron'''
-
-    #     c.line_to(start, level)
-    #     c.line_to(stop,level)
-    #     c.set_source_rgb(1, 0, 0)
-    #     c.set_line_width(1)
-    #     c.stroke()
-
-gene = region(fasta_dictionary['>test'])
+gene = region('>test', fasta_dictionary['>test'])
 ex = gene.exons
-intr = gene.introns
-print(gene.contig[ ex[0][1] ])
-print(gene.contig[ intr[0][0] ])
+print(ex)
+gene.normalize()
+print(ex)
+gene.draw_region()
+
+
+# class called draw doesn't work? whyyy tf?
+try:
+    draw.draw_region('>test', ex)
+except TypeError:
+    print("why tf doesn't this work")
 
 # region_dictionary ={
 #     # contig header: ( contig_length, exon_dictionary generated from exons builder )
@@ -161,22 +251,11 @@ print(gene.contig[ intr[0][0] ])
 
 
 # # set the surface dimensions
-# surface_width = 100 #NEED TO SET THIS TO MAX CONTIG LENGTH
+# surface_width = 100 #NEED TO SET THIS TO MAX CONTIG LE`NGTH
 # scale = 20
 # surface_height = len(region_dictionary)*scale 
 
 
-# def normalize(exons, length_of_contig, surface_width):
-#     '''function that transforms exon genome coordinates into cairo coordinates
-#     input: exon dictionary, cairo surface width
-#     output: exon dictionary with transformed coordinates'''
-
-#     # transform exon dictionary
-#     for i in range(0,len(exons)):
-#         exons[i] = (
-#             round(surface_width * exons[i][0]/length_of_contig, 0),
-#             round(surface_width * exons[i][1]/length_of_contig, 0)
-#             )
 
 
 
@@ -204,4 +283,4 @@ print(gene.contig[ intr[0][0] ])
 #         draw_region(region_dictionary[key][1], level)
 
 
-#     surface.write_to_png(args.output_file)
+#     
