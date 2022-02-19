@@ -140,25 +140,19 @@ class region:
 
             for i in range( 0, len(self.exons) ): 
                 
-                if self.exons[0][0] == 0:
+                if self.exons[i][0] == 0:
                     pass
                
                 else:
                     
-                    self.draw_intron(0, self.exons[0][0], c)
-
-                    # not all exons matched to the contig, this loop skips such exons
-                    if -1 in self.exons[i]:
-                        place = c.get_current_point()
-                        self.draw_intron(place[0], self.exons[i+1][0], c)
+                    self.draw_intron(0, self.exons[i][0], c)
                     
-                    else:
-                        try:
-                            self.draw_exon(self.exons[i][0], self.exons[i][1], c)
-                            self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
-                        
-                        except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                            self.draw_intron(self.exons[i][1], self.surface_width, c)
+                    try:
+                        self.draw_exon(self.exons[i][0], self.exons[i][1], c)
+                        self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
+                    
+                    except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                        self.draw_intron(self.exons[i][1], self.surface_width, c)
             
             surface.write_to_png(self.header + '.png')
 
@@ -204,7 +198,7 @@ class draw:
                
                 else:
                     
-                    self.draw_intron(0, exons[0][0], c)
+                    self.draw_intron(0, exons[i][0], c)
 
                     # not all exons matched to the contig, this loop skips such exons
                     if -1 in exons[i]:
