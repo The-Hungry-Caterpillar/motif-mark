@@ -135,33 +135,3 @@ for key in fasta_dictionary:
     gene.normalize()
     gene.draw_region()
 
-
-
-
-
-
-
-
-
-
-# # normalize the exons within the region dictionary
-# for key in region_dictionary:
-#     contig_length = region_dictionary[key][0]
-#     exons= region_dictionary[key][1]
-#     normalize(exons, contig_length, surface_width)
-
-
-
-# with cairo.SVGSurface('example.svg', surface_width, surface_height) as surface:
-#     c = cairo.Context(surface)
-    
-#     for i, key in enumerate(region_dictionary):
-
-#         # set the y height for each region
-#         level = (scale*i) + (surface_height/(2 * len(region_dictionary)))
-
-#         # draw each region
-#         draw_region(region_dictionary[key][1], level)
-
-
-#     
