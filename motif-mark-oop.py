@@ -31,7 +31,8 @@ class region:
     - .length: length of contig
     - .exons: list of exons (start pos, stop pos) ordered by start pos
     input: contig sequence and exon file'''
-    __slots__ = ['contig', 'length', 'exons','introns', 'surface_width', 'surface_height', 'level', 'header']
+
+    __slots__ = ['contig', 'length', 'exons','introns', 'header']
 
     def __init__(self, header, contig):
         self.header = header
@@ -39,9 +40,6 @@ class region:
         self.length=len(contig)
         self.exons = self.find_exons()
         self.introns = self.find_exons()
-        self.surface_width = 200 
-        self.surface_height = 200
-        self.level=100
 
     def find_exons(self):
         i=0
@@ -71,22 +69,20 @@ class region:
         return(exons)
           
 
-    def normalize(self):
-        '''function that transforms exon genome coordinates into cairo coordinates
-        input: exon dictionary, cairo surface width
-        output: exon dictionary with transformed coordinates'''
 
-        # transform exon list
-        for i in range(0,len(self.exons)):
-            self.exons[i] = (
-                round(self.surface_width * self.exons[i][0]/self.length, 0),
-                round(self.surface_width * self.exons[i][1]/self.length, 0)
-                )
+class motif:
+    pass
 
 
 class doodle:
+    '''still needs docstring'''
+
+    __slots__ = ['level','surface_width','surface_height']
+
     def __init__(self):
         self.level=100
+        self.surface_width=200
+        self.surface_height=200
 
     def draw_intron(self, start, stop, c):
         '''draws introns on cairo surface.
@@ -108,35 +104,40 @@ class doodle:
         c.set_source_rgb(0, .5, .5)
         c.fill()
 
+    def normalize(self, thing):
+        '''need doc string'''
 
+        # transform featurelist
+        for i in range(0,len(thing)):
+            thing[i] = (
+                round(self.surface_width * thing[i][0]/gene.length, 0),
+                round(self.surface_width * thing[i][1]/gene.length, 0)
+                )
 
+    def draw_region(self, gene):
+        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
+        input: exon, likely from a 'region.exons' object'''
 
-def draw_region(draw, gene):
-    '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
-    input: exon, likely from a 'region.exons' object'''
-    surface_width=200
-    surface_height=200
-
-    with cairo.SVGSurface('example.svg', surface_width, surface_height) as surface:
-        c = cairo.Context(surface)
-        c.move_to(0, gene.level)
-        
-        draw.draw_intron(0, gene.exons[0][0],c)
-
-        for i in range( 0, len(gene.exons) ): 
-            try:
-                draw.draw_exon(gene.exons[i][0], gene.exons[i][1], c)
-                draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], c)
+        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
+            c = cairo.Context(surface)
+            c.move_to(0, self.level)
             
-            except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                draw.draw_intron(gene.exons[i][1], surface_width, c)
-        
-        surface.write_to_png(gene.header + '.png')
+            self.draw_intron(0, gene.exons[0][0],c)
+
+            for i in range( 0, len(gene.exons) ): 
+                try:
+                    self.draw_exon(gene.exons[i][0], gene.exons[i][1], c)
+                    self.draw_intron(gene.exons[i][1], gene.exons[i+1][0], c)
+                
+                except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                    self.draw_intron(gene.exons[i][1], self.surface_width, c)
+            
+            surface.write_to_png(gene.header + '.png')
 
 
 for key in fasta_dictionary:
     gene = region(key, fasta_dictionary[key])
     draw=doodle()
-    gene.normalize()
-    draw_region(draw,gene)
+    draw.normalize(gene.exons)
+    draw.draw_region(gene)
 
