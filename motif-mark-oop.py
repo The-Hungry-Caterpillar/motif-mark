@@ -15,13 +15,13 @@ fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 
 
 
-intron1='atgtccacatgtagtcacgtttgacatcccagggccacctcagcaggccgtctctggggagaattttctctgatttcttccccttcccttgctggacccctgcacctgctggggaagatgtagctcactccgtctagcaagtgatgggagcgagtggtccagggtcaaagccagggtgcccttactcggacacatgtggcctccaagtgtcagagcccagtggtctgtctaatgaagttccctctgtcctcaaaggcgttggttttgtttccacag'
-exon1='AAAAACCTCTTCAGGCACTGGTGCCGAGGACCCTAG'
-intron2='gtatgactcacctgtgcgacccctggtgcctgctccgcgcagggccggcggcgtgccaggcagatgcctcggagaacccaggggtttctgtggctttttgcatgcggcgggcagctgtgctggagagcagatgcttcaccaattcagaaatccaatgccttcactctgaaatgaaatctgggcatgaatgtggggagaaaccttcactaacacactcttgctaaaacatagaatca'
-print(len(intron1+exon1+intron2))
-print(f'intron 1 start = 0, stop = {len(intron1)}')
-print(f'exon 1 start = {len(intron1)}, stop = {len(intron1)+len(exon1)}')
-print(f'intron 2 start = {len(intron1)+len(exon1)}, stop = {len(intron1)+len(exon1)+len(intron2)}')
+# intron1='atgtccacatgtagtcacgtttgacatcccagggccacctcagcaggccgtctctggggagaattttctctgatttcttccccttcccttgctggacccctgcacctgctggggaagatgtagctcactccgtctagcaagtgatgggagcgagtggtccagggtcaaagccagggtgcccttactcggacacatgtggcctccaagtgtcagagcccagtggtctgtctaatgaagttccctctgtcctcaaaggcgttggttttgtttccacag'
+# exon1='AAAAACCTCTTCAGGCACTGGTGCCGAGGACCCTAG'
+# intron2='gtatgactcacctgtgcgacccctggtgcctgctccgcgcagggccggcggcgtgccaggcagatgcctcggagaacccaggggtttctgtggctttttgcatgcggcgggcagctgtgctggagagcagatgcttcaccaattcagaaatccaatgccttcactctgaaatgaaatctgggcatgaatgtggggagaaaccttcactaacacactcttgctaaaacatagaatca'
+# print(len(intron1+exon1+intron2))
+# print(f'intron 1 start = 0, stop = {len(intron1)}')
+# print(f'exon 1 start = {len(intron1)}, stop = {len(intron1)+len(exon1)}')
+# print(f'intron 2 start = {len(intron1)+len(exon1)}, stop = {len(intron1)+len(exon1)+len(intron2)}')
 
 
 
@@ -102,7 +102,7 @@ class region:
                 round(self.surface_width * self.exons[i][1]/self.length, 0)
                 )
 
-    def draw_region(self): #currently not working
+    def draw_region(self):
         '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
         input: exon, likely from a 'region.exons' object'''
 
@@ -110,6 +110,8 @@ class region:
             c = cairo.Context(surface)
             c.move_to(0, self.level)
             
+            self.draw_intron(0, self.exons[0][0],c)
+
             for i in range( 0, len(self.exons) ): 
                 try:
                     self.draw_exon(self.exons[i][0], self.exons[i][1], c)
@@ -122,97 +124,17 @@ class region:
 
 
 
-gene = region('>test', fasta_dictionary['>test'])
-ex = gene.exons
-gene.normalize()
-print(ex)
-gene.draw_region()
+# gene = region('>test', fasta_dictionary['>test'])
+# ex = gene.exons
+# gene.normalize()
+# print(ex)
+# gene.draw_region()
 
+for key in fasta_dictionary:
+    gene = region(key, fasta_dictionary[key])
+    gene.normalize()
+    gene.draw_region()
 
-
-
-class draw:
-    def __init__(self):
-        self.surface_height = 100
-        self.surface_width = 100
-        self.level = 50 
-
-    def draw_intron(self, start, stop, c):
-        '''draws introns on cairo surface.
-        input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
-        output: a line representing intron, proportional to actual intron'''
-
-        c.line_to(start, self.level)
-        c.line_to(stop, self.level)
-        c.set_source_rgb(1, 0, 0)
-        c.set_line_width(1)
-        c.stroke()
-
-    def draw_exon(self, start, stop, c):
-        '''draws exons on cairo surface.
-        input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
-        output: a rectangle proportional to actual exon'''
-
-        c.rectangle(start, self.level-10, stop-start, 10)
-        c.set_source_rgb(0, .5, .5)
-        c.fill()
-
-    def draw_region(self, header, exons): #currently not working
-        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
-        input: exon, likely from a 'region.exons' object'''
-
-        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
-            c = cairo.Context(surface)
-            c.move_to(0, self.level)
-
-            for i in range( 0, len(exons) ): 
-                
-                if exons[0][0] == 0:
-                    pass
-               
-                else:
-                    
-                    self.draw_intron(0, exons[i][0], c)
-
-                    # not all exons matched to the contig, this loop skips such exons
-                    if -1 in exons[i]:
-                        place = c.get_current_point()
-                        self.draw_intron(place[0], exons[i+1][0], c)
-                    
-                    else:
-                        try:
-                            self.draw_exon(exons[i][0], exons[i][1], c)
-                            self.draw_intron(exons[i][1], exons[i+1][0], c)
-                        
-                        except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                            self.draw_intron(exons[i][1], self.surface_width, c)
-            
-            surface.write_to_png(header + '.png')
-
-# class called draw doesn't work? whyyy tf?
-try:
-    draw.draw_region('>test', ex)
-except TypeError:
-    print("why tf doesn't this work")
-
-# region_dictionary ={
-#     # contig header: ( contig_length, exon_dictionary generated from exons builder )
-# }
-
-# for key in fasta_dictionary:
-#     x = region(fasta_dictionary[key], args.exon_file)
-#     region_dictionary[key]= (x.length, x.exons)
-
-
-# ################################################
-# ######## begin pycairo #########################
-# ################################################
-
-
-# # set the surface dimensions
-# surface_width = 100 #NEED TO SET THIS TO MAX CONTIG LE`NGTH
-# scale = 20
-# surface_height = len(region_dictionary)*scale 
 
 
 
