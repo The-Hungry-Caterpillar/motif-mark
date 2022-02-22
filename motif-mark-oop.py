@@ -1,14 +1,48 @@
 import cairo
 import bioinfo
+import re
 
 def get_args():
     import argparse
     parser = argparse.ArgumentParser(description = "this script outputs a map of motifs on a regions from a fasta file, exon sequence file, and motif marker files")
     parser.add_argument('-f', '--fasta_file', help='input fasta file to be mapped')
+    parser.add_argument('-m', '--motifs_file', help='input motifs file')
     return parser.parse_args()
 args=get_args() 
 
-fasta_dictionary=bioinfo.fasta_reader(args.fasta_file) 
+fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
+with open(args.motifs_file) as f:
+    motifs=f.read().splitlines()
+    motifs = [motif.upper() for motif in motifs]
+print(motifs)
+
+IUPAC={
+    'A':"A",
+    'C':"C",
+    'G':"G",
+    'T':"T",
+    'U':'U',
+    'W':'[AT]',
+    'S':'[CG]',
+    'M':'[AC]',
+    'K':'[GT]',
+    'R':'[AG]',
+    'Y':"[CT]",
+    'B':'[CGT]',
+    'D':'[AGT]',
+    'G':'[ACT]',
+    'T':'[ACG]',
+    'N':'[ACGT]'
+}
+
+pattern=list(motifs[0]) # grab the first motif from file
+reg_list = [IUPAC[letter] for letter in pattern] # break the motif into list, and sub each letter for IUPAC replacement
+reg_pattern = ''.join(reg_list) # join the subbed list together into a string
+res = re.search(reg_pattern, fasta_dictionary['>test'], re.IGNORECASE) # search the above string in a contif
+res.span() # call object?
+start=res.start() # define start
+stop=res.end() # define end
+print(start,stop)
 
 
 class region:
@@ -56,7 +90,11 @@ class region:
           
 
 class motif:
-    pass
+    def __init__(self,motif_file):
+        self.sequences=open(motif_file)
+
+    def find_motifs(self):
+        pass
 
 
 class doodle:
@@ -126,3 +164,7 @@ for key in fasta_dictionary:
     draw.normalize(gene.exons)
     draw.draw_region(gene)
 
+
+# start = contig.find(list_of_exons[i])
+# stop = len(list_of_exons[i]) + start
+# exons.append([start,stop])
