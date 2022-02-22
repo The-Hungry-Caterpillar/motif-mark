@@ -15,34 +15,6 @@ fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 
 
 
-# def exons_builder(file, contig):
-#     '''generates a list of exons sorted by start and stop relative to the input contif
-#     input: a text file with exon seqeuences seperated by new lines
-#     return: a sorted list of exons as described below'''
-
-#     with open(file) as e:
-#         list_of_exons = e.read().splitlines()
-        
-#         # generates a list: [ [exon start, exon stop], [ exon start, exon stop ], ... ]
-#         exons=[]
-#         for i in range(0,len(list_of_exons)):
-#             start = contig.find(list_of_exons[i])
-#             stop = len(list_of_exons[i]) + start
-#             exons.append([start,stop])
-#     exons.sort()
-#     return(exons)
-
-
-
-
-
-
-
-
-
-
-
-
 intron1='atgtccacatgtagtcacgtttgacatcccagggccacctcagcaggccgtctctggggagaattttctctgatttcttccccttcccttgctggacccctgcacctgctggggaagatgtagctcactccgtctagcaagtgatgggagcgagtggtccagggtcaaagccagggtgcccttactcggacacatgtggcctccaagtgtcagagcccagtggtctgtctaatgaagttccctctgtcctcaaaggcgttggttttgtttccacag'
 exon1='AAAAACCTCTTCAGGCACTGGTGCCGAGGACCCTAG'
 intron2='gtatgactcacctgtgcgacccctggtgcctgctccgcgcagggccggcggcgtgccaggcagatgcctcggagaacccaggggtttctgtggctttttgcatgcggcgggcagctgtgctggagagcagatgcttcaccaattcagaaatccaatgccttcactctgaaatgaaatctgggcatgaatgtggggagaaaccttcactaacacactcttgctaaaacatagaatca'
@@ -138,23 +110,33 @@ class region:
             c = cairo.Context(surface)
             c.move_to(0, self.level)
 
+            # if self.exons[0][0] == 0:
+            #     self.draw_exon(0, self.exons[0][1], c)
+            # else:
+            #     self.draw_intron(0, self.exons[0][0], c)
+            
             for i in range( 0, len(self.exons) ): 
                 
-                if self.exons[i][0] == 0:
-                    pass
-               
-                else:
                     
-                    self.draw_intron(0, self.exons[i][0], c)
-                    
-                    try:
-                        self.draw_exon(self.exons[i][0], self.exons[i][1], c)
-                        self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
-                    
-                    except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                        self.draw_intron(self.exons[i][1], self.surface_width, c)
+                try:
+                    self.draw_exon(self.exons[i][0], self.exons[i][1], c)
+                    self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
+                
+                except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                    self.draw_intron(self.exons[i][1], self.surface_width, c)
             
             surface.write_to_png(self.header + '.png')
+
+
+
+gene = region('>test', fasta_dictionary['>test'])
+ex = gene.exons
+print(ex)
+gene.normalize()
+print(ex)
+gene.draw_region()
+
+
 
 
 class draw:
@@ -214,15 +196,6 @@ class draw:
                             self.draw_intron(exons[i][1], self.surface_width, c)
             
             surface.write_to_png(header + '.png')
-
-
-gene = region('>test', fasta_dictionary['>test'])
-ex = gene.exons
-print(ex)
-gene.normalize()
-print(ex)
-gene.draw_region()
-
 
 # class called draw doesn't work? whyyy tf?
 try:
