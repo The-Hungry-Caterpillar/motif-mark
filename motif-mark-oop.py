@@ -39,9 +39,9 @@ class region:
         self.length=len(contig)
         self.exons = self.find_exons()
         self.introns = self.find_exons()
-        self.surface_width = 100 
-        self.surface_height = 100
-        self.level=50
+        self.surface_width = 200 
+        self.surface_height = 200
+        self.level=100
 
     def find_exons(self):
         i=0
@@ -109,15 +109,8 @@ class region:
         with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
             c = cairo.Context(surface)
             c.move_to(0, self.level)
-
-            # if self.exons[0][0] == 0:
-            #     self.draw_exon(0, self.exons[0][1], c)
-            # else:
-            #     self.draw_intron(0, self.exons[0][0], c)
             
             for i in range( 0, len(self.exons) ): 
-                
-                    
                 try:
                     self.draw_exon(self.exons[i][0], self.exons[i][1], c)
                     self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
@@ -131,7 +124,6 @@ class region:
 
 gene = region('>test', fasta_dictionary['>test'])
 ex = gene.exons
-print(ex)
 gene.normalize()
 print(ex)
 gene.draw_region()
