@@ -1,5 +1,23 @@
 #!/usr/bin/env python
 
+IUPAC={
+    'A':"A",
+    'C':"C",
+    'G':"G",
+    'T':"T",
+    'U':'U',
+    'W':'[AT]',
+    'S':'[CG]',
+    'M':'[AC]',
+    'K':'[GT]',
+    'R':'[AG]',
+    'Y':"[CT]",
+    'B':'[CGT]',
+    'D':'[AGT]',
+    'G':'[ACT]',
+    'T':'[ACG]',
+    'N':'[ACGT]'
+}
 
 def validate_base_seq(seq,RNAflag=False):
     '''This function takes a string. Returns True if string is composed
@@ -106,4 +124,35 @@ if __name__ == '__bioinfo__':
 	assert len(fasta_reader('fasta_reader_test.fa')) == 2; 'wrong fasta dictionary length'
 	assert len(fasta_reader('fasta_reader_test.fa')['>NODE_2']) == 5, 'wrong nucleotide length'
 
+
+import re
+class motif:
+    __slots__=['motifs', 'motif_positions','contig']
+
+    def __init__(self, motifs, contig):
+        self.contig=contig
+        self.motifs=motifs
+        self.motif_positions=self.find_motifs()
+
+    def find_motifs(self):
+        motif_position=[]
+        for motif in self.motifs: 
+            reg_list = [IUPAC[letter.upper()] for letter in motif] # break the motif into list, and sub each letter for IUPAC replacement
+            reg_pattern = ''.join(reg_list) # join the subbed list together into a string
+            res = re.search(reg_pattern, self.contig, re.IGNORECASE) # search the above string in a contig
+            try:
+                res.span() # call re object
+                start=res.start() # define start
+                stop=res.end() # define end
+                motif_position.append([int(start),int(stop)])
+            except AttributeError:
+                pass
+        return(motif_position)
+
+if __name__ == '__bioinfo__':
+	motifs=motif(['ygcy', 'GCAUG', 'catag', 'YYYYYYYYYY'], 'TGCCaaaGCUAGaaaCAtaGaaaCTTTCCTCTTaaa')
+	assert motifs.motif_positions[0] == (0,3); 'wrong position'
+	assert motifs.motif_positions[1] == (7,11); 'wrong position'
+	assert motifs.motif_positions[2] == (15, 19); 'wrong position'
+	assert motifs.motif_positions[3] == (23, 33); 'wrong position'
 
