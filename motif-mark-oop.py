@@ -70,6 +70,24 @@ class region:
             exons.append([start,stop])
         return(exons)
           
+
+    def normalize(self):
+        '''function that transforms exon genome coordinates into cairo coordinates
+        input: exon dictionary, cairo surface width
+        output: exon dictionary with transformed coordinates'''
+
+        # transform exon list
+        for i in range(0,len(self.exons)):
+            self.exons[i] = (
+                round(self.surface_width * self.exons[i][0]/self.length, 0),
+                round(self.surface_width * self.exons[i][1]/self.length, 0)
+                )
+
+
+class doodle:
+    def __init__(self):
+        self.level=100
+
     def draw_intron(self, start, stop, c):
         '''draws introns on cairo surface.
         input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
@@ -90,48 +108,35 @@ class region:
         c.set_source_rgb(0, .5, .5)
         c.fill()
 
-    def normalize(self):
-        '''function that transforms exon genome coordinates into cairo coordinates
-        input: exon dictionary, cairo surface width
-        output: exon dictionary with transformed coordinates'''
 
-        # transform exon list
-        for i in range(0,len(self.exons)):
-            self.exons[i] = (
-                round(self.surface_width * self.exons[i][0]/self.length, 0),
-                round(self.surface_width * self.exons[i][1]/self.length, 0)
-                )
 
-    def draw_region(self):
-        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
-        input: exon, likely from a 'region.exons' object'''
 
-        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
-            c = cairo.Context(surface)
-            c.move_to(0, self.level)
+def draw_region(draw, gene):
+    '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
+    input: exon, likely from a 'region.exons' object'''
+    surface_width=200
+    surface_height=200
+
+    with cairo.SVGSurface('example.svg', surface_width, surface_height) as surface:
+        c = cairo.Context(surface)
+        c.move_to(0, gene.level)
+        
+        draw.draw_intron(0, gene.exons[0][0],c)
+
+        for i in range( 0, len(gene.exons) ): 
+            try:
+                draw.draw_exon(gene.exons[i][0], gene.exons[i][1], c)
+                draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], c)
             
-            self.draw_intron(0, self.exons[0][0],c)
+            except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                draw.draw_intron(gene.exons[i][1], surface_width, c)
+        
+        surface.write_to_png(gene.header + '.png')
 
-            for i in range( 0, len(self.exons) ): 
-                try:
-                    self.draw_exon(self.exons[i][0], self.exons[i][1], c)
-                    self.draw_intron(self.exons[i][1], self.exons[i+1][0], c)
-                
-                except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                    self.draw_intron(self.exons[i][1], self.surface_width, c)
-            
-            surface.write_to_png(self.header + '.png')
-
-
-
-# gene = region('>test', fasta_dictionary['>test'])
-# ex = gene.exons
-# gene.normalize()
-# print(ex)
-# gene.draw_region()
 
 for key in fasta_dictionary:
     gene = region(key, fasta_dictionary[key])
+    draw=doodle()
     gene.normalize()
-    gene.draw_region()
+    draw_region(draw,gene)
 
