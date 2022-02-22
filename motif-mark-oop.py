@@ -4,25 +4,11 @@ import bioinfo
 def get_args():
     import argparse
     parser = argparse.ArgumentParser(description = "this script outputs a map of motifs on a regions from a fasta file, exon sequence file, and motif marker files")
-	#parser.add_argument('- command line variable', '-- python variable', description)
     parser.add_argument('-f', '--fasta_file', help='input fasta file to be mapped')
-    # parser.add_argument('-e', '--exon_file', help='input exon file. exon file should be sequences of exons sorted by new lines')
-    # parser.add_argument('-o', '--output_file', help='input output png file name')
     return parser.parse_args()
 args=get_args() 
 
 fasta_dictionary=bioinfo.fasta_reader(args.fasta_file) 
-
-
-
-# intron1='atgtccacatgtagtcacgtttgacatcccagggccacctcagcaggccgtctctggggagaattttctctgatttcttccccttcccttgctggacccctgcacctgctggggaagatgtagctcactccgtctagcaagtgatgggagcgagtggtccagggtcaaagccagggtgcccttactcggacacatgtggcctccaagtgtcagagcccagtggtctgtctaatgaagttccctctgtcctcaaaggcgttggttttgtttccacag'
-# exon1='AAAAACCTCTTCAGGCACTGGTGCCGAGGACCCTAG'
-# intron2='gtatgactcacctgtgcgacccctggtgcctgctccgcgcagggccggcggcgtgccaggcagatgcctcggagaacccaggggtttctgtggctttttgcatgcggcgggcagctgtgctggagagcagatgcttcaccaattcagaaatccaatgccttcactctgaaatgaaatctgggcatgaatgtggggagaaaccttcactaacacactcttgctaaaacatagaatca'
-# print(len(intron1+exon1+intron2))
-# print(f'intron 1 start = 0, stop = {len(intron1)}')
-# print(f'exon 1 start = {len(intron1)}, stop = {len(intron1)+len(exon1)}')
-# print(f'intron 2 start = {len(intron1)+len(exon1)}, stop = {len(intron1)+len(exon1)+len(intron2)}')
-
 
 
 class region:
@@ -68,7 +54,6 @@ class region:
             exons.append([start,stop])
         return(exons)
           
-
 
 class motif:
     pass
