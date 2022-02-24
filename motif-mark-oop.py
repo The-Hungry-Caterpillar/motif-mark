@@ -1,6 +1,9 @@
 import cairo
 import bioinfo
 import re
+import cmapy
+import random
+
 
 def get_args():
     import argparse
@@ -11,9 +14,12 @@ def get_args():
 args=get_args() 
 
 fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
+
+# color = (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))
+
 with open(args.motifs_file) as f:
     motifs=f.read().splitlines()
-    motifs_list = [motif.upper() for motif in motifs]
+    motifs_list = [(motif.upper(), (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))) for motif in motifs]
 
 IUPAC = bioinfo.IUPAC
 
@@ -63,27 +69,23 @@ class region:
           
 
 class motif:
-    __slots__=['motifs', 'motif_positions','contig']
+    __slots__=['motifs', 'motif_positions','contig', 'motif_name', 'color']
     
-    def __init__(self, motifs, contig):
-        self.contig=contig
-        self.motifs=motifs
-        self.motif_positions=self.find_motifs()
+    def __init__(self, motif, contig, colors):
+        self.contig=contig.upper()
+        self.motifs=motif
+        self.motif_name=motif
+        self.motif_positions=self.find_positions() 
+        self.color = colors
 
-    def find_motifs(self):
-        motif_position=[]
-        for motif in self.motifs: 
-            reg_list = [IUPAC[letter.upper()] for letter in motif] # break the motif into list, and sub each letter for IUPAC replacement
-            reg_pattern = ''.join(reg_list) # join the subbed list together into a string
-            res = re.search(reg_pattern, self.contig, re.IGNORECASE) # search the above string in a contig
-            try:
-                res.span() # call re object
-                start=res.start() # define start
-                stop=res.end() # define end
-                motif_position.append([int(start),int(stop)])
-            except AttributeError:
-                pass
-        return(motif_position)
+    def find_positions(self):
+        # should change this list to dictionary with key being the actual motif sequence
+        motif_positions=[] # [ [[motif1 start, motif1 stop], [motif1 start2, motif1 stop2]], [[motif2 start1, motif2 stop1]], etc ]
+        reg_list = [IUPAC[letter] for letter in self.motifs.upper()] # break the motif into list, and sub each letter for IUPAC replacement
+        reg_pattern = ''.join(reg_list) # join the subbed list together into a string
+        for match in re.finditer(reg_pattern,self.contig):
+            motif_positions.append([match.start(), match.end()])
+        return(motif_positions)
 
 
 class doodle:
@@ -96,10 +98,13 @@ class doodle:
         self.surface_width=200
         self.surface_height=200
     
-    def draw_motif(self, start, stop, c):
-        c.rectangle(start, self.level-8, stop-start, 16)
-        c.set_source_rgb(0.1, 0, .5)
-        c.fill()
+    def draw_motifs(self, motif_class, c):
+        for i in range(0, len(motif_class.motif_positions)):
+            start=motif_class.motif_positions[i][0]
+            stop=motif_class.motif_positions[i][1]
+            c.rectangle(start, self.level-8, stop-start, 16)
+            c.set_source_rgb(motif_class.color[0], motif_class.color[1], motif_class.color[2])
+            c.fill()
 
     def draw_intron(self, start, stop, c):
         '''draws introns on cairo surface.
@@ -108,7 +113,7 @@ class doodle:
 
         c.line_to(start, self.level)
         c.line_to(stop, self.level)
-        c.set_source_rgb(1, 0, 0)
+        c.set_source_rgb(0, 0, 0)
         c.set_line_width(1)
         c.stroke()
 
@@ -118,8 +123,20 @@ class doodle:
         output: a rectangle proportional to actual exon'''
 
         c.rectangle(start, self.level-5, stop-start, 10)
-        c.set_source_rgb(0, .5, .5)
-        c.fill()
+  
+        # setting color of the context for inside
+        c.set_source_rgb(.8, .8, .8)
+    
+        # Preserving inside color of object
+        c.fill_preserve()
+    
+        # setting color of the context for outline
+        c.set_source_rgb(0, 0, 0.5)
+    
+        c.set_line_width(1)
+    
+        # stroke out the color and width property
+        c.stroke()
 
     def normalize(self, thing):
         '''need doc string'''
@@ -131,36 +148,30 @@ class doodle:
                 round(self.surface_width * thing[i][1]/gene.length, 0)
                 )
 
-    def draw_region(self, gene_positions, motif_positions):
-        '''draws an entire region using 'draw_exon' and 'draw_intron' fucntions
-        input: exon, likely from a 'region.exons' object'''
-
-        with cairo.SVGSurface('example.svg', self.surface_width, self.surface_height) as surface:
-            c = cairo.Context(surface)
-            c.move_to(0, self.level)
-            
-            self.draw_intron(0, gene_positions[0][0],c)
-
-            for i in range( 0, len(gene_positions) ): 
-                try:
-                    self.draw_exon(gene_positions[i][0], gene_positions[i][1], c)
-                    self.draw_intron(gene_positions[i][1], gene_positions[i+1][0], c)
-                
-                except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                    self.draw_intron(gene_positions[i][1], self.surface_width, c)
-
-            for i in range( 0, len(motif_positions) ):
-                self.draw_motif(motif_positions[i][0], motif_positions[i][1], c)
-            
-            surface.write_to_png(gene.header + '.png')
-
+draw=doodle()
 
 for key in fasta_dictionary:
     gene = region(key, fasta_dictionary[key])
-    motifs = motif(motifs_list, gene.contig)
-    draw=doodle()
-
     draw.normalize(gene.exons)
-    draw.normalize(motifs.motif_positions)
-    draw.draw_region(gene.exons, motifs.motif_positions)
+    with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
+        c = cairo.Context(surface)
+        c.move_to(0, draw.level)
+        
+        draw.draw_intron(0, gene.exons[0][0],c)
+
+        for i in range( 0, len(gene.exons) ): 
+            try:
+                draw.draw_exon(gene.exons[i][0], gene.exons[i][1], c)
+                draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], c)
+            
+            except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
+                draw.draw_intron(gene.exons[i][1], draw.surface_width, c)
+
+        for motiv in motifs_list:
+            motiv = motif(motiv[0], gene.contig, motiv[1])
+            draw.normalize(motiv.motif_positions)
+            draw.draw_motifs(motiv, c)
+
+        surface.write_to_png(gene.header + '.png')
+
  
