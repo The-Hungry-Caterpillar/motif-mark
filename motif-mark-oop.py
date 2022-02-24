@@ -94,8 +94,9 @@ class doodle:
     __slots__ = ['level','surface_width','surface_height']
 
     def __init__(self):
-        self.level=100
-        self.surface_width=200
+        self.level=125
+        # self.surface_width=400
+        self.surface_width=100*len(motifs_list) + 200
         self.surface_height=200
     
     def draw_motifs(self, motif_class, c):
@@ -148,7 +149,33 @@ class doodle:
                 round(self.surface_width * thing[i][1]/gene.length, 0)
                 )
 
+
+
 draw=doodle()
+
+# legend_start=draw.surface_width+10
+legend_start = 0
+# legend_end = 100
+legend_end = draw.surface_width
+legend_top = 10
+legend_bottom=40
+# legend_bottom=25*len(motifs_list) + 50
+legend_middle=legend_top+((legend_bottom-legend_top)/2)
+font_size=15
+label_width=100
+spacer=5
+
+def draw_label(feature, i, color1, color2, color3,c):
+    c.rectangle(legend_start+i*label_width+spacer, legend_top+.5*legend_middle, font_size, font_size)
+    c.set_source_rgb(color1, color2, color3)
+    c.fill_preserve()
+    if feature=='Exon':
+        c.set_source_rgb(0, 0, 0.5)
+        c.set_line_width(1)
+    x=c.get_current_point()[0]
+    c.move_to(x+spacer+font_size, legend_middle+.5*font_size)
+    c.show_text(feature)
+    c.stroke()
 
 for key in fasta_dictionary:
     gene = region(key, fasta_dictionary[key])
@@ -156,7 +183,30 @@ for key in fasta_dictionary:
     with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
         c = cairo.Context(surface)
         c.move_to(0, draw.level)
+
+        # draw legend box
+        c.rectangle(legend_start, legend_top, legend_end, legend_bottom)
+        c.set_source_rgb(0, 0, 0)
+        c.set_line_width(1)
+        c.stroke()
+
+        # set font stuff
+        c.set_source_rgb(0, 0, 0)
+        c.set_font_size(font_size)
+        c.select_font_face(
+            "Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         
+        draw_label("Exon", 0, .8,.8,.8, c)
+
+        # c.rectangle(legend_start+spacer, legend_top+.5*legend_middle, font_size, font_size)
+        # c.set_source_rgb(.8, .8, .8)
+        # c.fill_preserve()
+        # c.set_source_rgb(0, 0, 0.5)
+        # c.set_line_width(1)
+        # c.move_to(legend_start+2*spacer+i*font_size, legend_middle+.5*font_size)
+        # c.show_text("Exon")
+        # c.stroke()
+
         draw.draw_intron(0, gene.exons[0][0],c)
 
         for i in range( 0, len(gene.exons) ): 
@@ -167,10 +217,15 @@ for key in fasta_dictionary:
             except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
                 draw.draw_intron(gene.exons[i][1], draw.surface_width, c)
 
+        i=1
         for motiv in motifs_list:
-            motiv = motif(motiv[0], gene.contig, motiv[1])
-            draw.normalize(motiv.motif_positions)
-            draw.draw_motifs(motiv, c)
+            moti = motif(motiv[0], gene.contig, motiv[1])
+            if moti.motif_positions != []:
+                draw_label(motiv[0], i, motiv[1][0], motiv[1][1], motiv[1][2], c)
+                i+=1
+            draw.normalize(moti.motif_positions)
+            draw.draw_motifs(moti, c)
+
 
         surface.write_to_png(gene.header + '.png')
 
