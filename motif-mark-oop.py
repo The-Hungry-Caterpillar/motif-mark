@@ -28,7 +28,7 @@ IUPAC = bioinfo.IUPAC # imports dictionary of all IUPAC symbols, e.g. 'H':'[ACT]
 class region:
     ''' insert docstring '''
 
-    __slots__ = ['contig', 'length', 'exons','introns', 'header', 'exon_color', 'exon_border_color']
+    __slots__ = ['contig', 'length', 'exons','introns', 'header']
 
     def __init__(self, header, contig):
         self.header = header
@@ -36,8 +36,6 @@ class region:
         self.length=len(contig)
         self.exons = self.find_exons()
         self.introns = self.find_exons()
-        self.exon_color=(0.5,0.5,0.5)
-        self.exon_border_color=(0,0,0)
 
     def find_exons(self):
         i=0
@@ -97,11 +95,10 @@ class doodle:
 
     # __slots__ = ['level','surface_width','surface_height', 'font_size']
 
-    def __init__(self, max_motif_length, level):
+    def __init__(self, max_motif_length):
         # self.surface_width=400
         self.surface_width = 200 * len(motifs_list) + 200
-        self.surface_height = 300
-        self.level = level
+        self.surface_height = 200 + 200*len(fasta_dictionary)
         self.font_size = 20
         self.label_width=max_motif_length*self.font_size
         
@@ -121,38 +118,38 @@ class doodle:
         c.set_line_width(1)
         c.stroke()
 
-    def stack_motifs(self, motif_class, c):
-        height = self.level
+    def stack_motifs(self, motif_class, level, c):
+        height = level
         for i in range(0, len(motif_class.motif_positions)):
             start=motif_class.motif_positions[i][0]
             stop=motif_class.motif_positions[i][1]
 
-            height=random.randint(int(self.level-self.surface_height/10), int(self.level+self.surface_height/10))
+            height=random.randint(int(level-30), int(level+30))
             self.draw_motif(motif_class, height, start, stop, c)
                     
-    def draw_intron(self, start, stop, c):
+    def draw_intron(self, start, stop, level, c):
         '''draws introns on cairo surface.
         input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
         output: a line representing intron, proportional to actual intron'''
 
-        c.line_to(start, self.level)
-        c.line_to(stop, self.level)
+        c.line_to(start, level)
+        c.line_to(stop, level)
         c.set_source_rgb(0, 0, 0)
         c.set_line_width(1)
         c.stroke()
 
-    def draw_name(self, contig_name, c):
-        c.move_to(0,self.level-60)
+    def draw_name(self, contig_name, level, c):
+        c.move_to(0, level-60)
         c.set_source_rgb(0,0,0)
         c.show_text(contig_name)
         c.stroke()
 
-    def draw_exon(self, start, stop, fill_colors, border_colors, c):
+    def draw_exon(self, start, stop, fill_colors, border_colors, level, c):
         '''draws exons on cairo surface.
         input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
         output: a rectangle proportional to actual exon'''
 
-        c.rectangle(start, self.level-30, stop-start, 60)
+        c.rectangle(start, level-30, stop-start, 60)
         c.set_source_rgb(fill_colors[0],fill_colors[1],fill_colors[2])
         c.fill_preserve()
         c.set_source_rgb(border_colors[0], border_colors[1], border_colors[2])
@@ -191,46 +188,46 @@ class doodle:
         c.show_text(feature)
         c.stroke()
 
-
-for key in fasta_dictionary:
-    draw = doodle(max_motif_length, 250) 
-    gene = region(key, fasta_dictionary[key])
-    draw.normalize(gene.exons)
-    with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
-        c = cairo.Context(surface)
-        c.move_to(0, draw.level)
-
-        draw.draw_legend()
-
-        # set font parameters
-        c.set_source_rgb(0, 0, 0)
-        c.set_font_size(draw.font_size)
-        c.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        
-        label_number=0
-        draw.draw_label("Exon", label_number, gene.exon_color, gene.exon_border_color, c)
+draw = doodle(max_motif_length)
+with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
+    c = cairo.Context(surface)
+    # c.move_to(0, draw.level)
+    draw.draw_legend()
+    # set font parameters
+    c.set_source_rgb(0, 0, 0)
+    c.set_font_size(draw.font_size)
+    c.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+    
+    label_number=0
+    draw.draw_label("Exon", label_number, (0.5,0.5,0.5), (0,0,0), c)
+    label_number+=1
+    for motiv in motifs_list:
+        draw.draw_label(motiv[0], label_number, motiv[1], motiv[2], c)
         label_number+=1
 
-        draw.draw_name(key,c)
-        draw.draw_intron(0, gene.exons[0][0],c)
+    for h,key in enumerate(fasta_dictionary):
+        
+        level = h*200 + 250
+        gene = region(key, fasta_dictionary[key])
+        draw.normalize(gene.exons)
+
+        draw.draw_name(key,level, c)
+        draw.draw_intron(0, gene.exons[0][0], level, c)
 
         for i in range( 0, len(gene.exons) ): 
             try:
-                draw.draw_exon(gene.exons[i][0], gene.exons[i][1], gene.exon_color, gene.exon_border_color, c)
-                draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], c)
+                draw.draw_exon(gene.exons[i][0], gene.exons[i][1], (0.5, 0.5, 0.5), (0, 0, 0), level, c)
+                draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], level, c)
             
             except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                draw.draw_intron(gene.exons[i][1], draw.surface_width, c)
+                draw.draw_intron(gene.exons[i][1], draw.surface_width, level, c)
 
         for motiv in motifs_list:
             moti = motif(motiv[0], gene.contig, motiv[1], motiv[2])
-            if moti.motif_positions != []:
-                draw.draw_label(motiv[0], label_number, moti.color, moti.border_color, c)
-                label_number+=1
             draw.normalize(moti.motif_positions)
-            draw.stack_motifs(moti,c)
+            draw.stack_motifs(moti, level,c)
 
 
-        surface.write_to_png(gene.header + '.png')
+        surface.write_to_png(args.fasta_file + '.png')
 
  
