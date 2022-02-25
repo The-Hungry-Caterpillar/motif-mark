@@ -14,6 +14,9 @@ args=get_args()
 
 fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 
+max_contig=(max([len(value) for value in fasta_dictionary.values()]))
+
+
 with open(args.motifs_file) as f:
     motifs=f.read().splitlines()
     motifs_list = [(motif.upper(),
@@ -95,12 +98,13 @@ class doodle:
 
     # __slots__ = ['level','surface_width','surface_height', 'font_size']
 
-    def __init__(self, max_motif_length):
+    def __init__(self, max_motif_length, max_contig):
         # self.surface_width=400
         self.surface_width = 200 * len(motifs_list) + 200
         self.surface_height = 200 + 200*len(fasta_dictionary)
         self.font_size = 20
         self.label_width=max_motif_length*self.font_size
+        self.max_contig=max_contig
         
         # legend parameters
         self.legend_start=0
@@ -162,8 +166,8 @@ class doodle:
         # transform featurelist
         for i in range(0,len(thing)):
             thing[i] = (
-                round(self.surface_width * thing[i][0]/gene.length, 0),
-                round(self.surface_width * thing[i][1]/gene.length, 0)
+                round(self.surface_width * thing[i][0]/self.max_contig, 0),
+                round(self.surface_width * thing[i][1]/self.max_contig, 0)
                 )
 
     def draw_legend(self):
@@ -188,7 +192,7 @@ class doodle:
         c.show_text(feature)
         c.stroke()
 
-draw = doodle(max_motif_length)
+draw = doodle(max_motif_length,max_contig)
 with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
     c = cairo.Context(surface)
     # c.move_to(0, draw.level)
@@ -210,6 +214,7 @@ with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as
         level = h*200 + 250
         gene = region(key, fasta_dictionary[key])
         draw.normalize(gene.exons)
+        length=round(draw.surface_width * gene.length/draw.max_contig, 0)
 
         draw.draw_name(key,level, c)
         draw.draw_intron(0, gene.exons[0][0], level, c)
@@ -220,7 +225,7 @@ with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as
                 draw.draw_intron(gene.exons[i][1], gene.exons[i+1][0], level, c)
             
             except IndexError: # draws the final intron. If exons is final feature this intron will be length 0
-                draw.draw_intron(gene.exons[i][1], draw.surface_width, level, c)
+                draw.draw_intron(gene.exons[i][1], length, level, c)
 
         for motiv in motifs_list:
             moti = motif(motiv[0], gene.contig, motiv[1], motiv[2])
