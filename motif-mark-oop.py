@@ -17,19 +17,16 @@ fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
 with open(args.motifs_file) as f:
     motifs=f.read().splitlines()
     motifs_list = [(motif.upper(),
-    (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)), 
-    (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)) ) 
-    for motif in motifs]
-    max_motif_length=(len(max(motifs_list)[0]))
+        (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)), # assign random fill color for each motif
+        (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))) # assign random border color for each motif
+        for motif in motifs
+        ]
+    max_motif_length=(len(max(motifs_list)[0])) # find the longest motif, used in creating legend
 
-IUPAC = bioinfo.IUPAC
+IUPAC = bioinfo.IUPAC # imports dictionary of all IUPAC symbols, e.g. 'H':'[ACT]'
 
 class region:
-    '''creates an object called region consisting of:
-    - .contig: contig sequence
-    - .length: length of contig
-    - .exons: list of exons (start pos, stop pos) ordered by start pos
-    input: contig sequence and exon file'''
+    ''' insert docstring '''
 
     __slots__ = ['contig', 'length', 'exons','introns', 'header', 'exon_color', 'exon_border_color']
 
@@ -70,15 +67,15 @@ class region:
         return(exons)
           
 class motif:
-    __slots__=['motif', 'motif_positions','contig', 'motif_name', 'color','border_color']
+    __slots__=[ 'motif_positions','contig', 'motif', 'color','border_color']
     
     def __init__(self, motif, contig, colors, border_color):
         self.contig=contig.upper()
         self.motif=motif
-        self.motif_name=motif
         self.motif_positions=self.find_positions() 
         self.color = colors
         self.border_color = border_color
+
 
     def find_positions(self):
         motif_positions=[]
@@ -100,20 +97,20 @@ class doodle:
 
     # __slots__ = ['level','surface_width','surface_height', 'font_size']
 
-    def __init__(self, max_motif_length):
+    def __init__(self, max_motif_length, level):
         # self.surface_width=400
         self.surface_width = 200 * len(motifs_list) + 200
-        self.surface_height = 500
-        self.level = self.surface_height/2
+        self.surface_height = 300
+        self.level = level
         self.font_size = 20
         self.label_width=max_motif_length*self.font_size
         
         # legend parameters
         self.legend_start=0
         self.legend_end = self.surface_width
-        self.legend_top = self.surface_height/20
-        self.legend_bottom = self.surface_height/5
-        self.legend_middle = self.legend_top + (self.legend_bottom-self.legend_top)/2
+        self.legend_top = 5
+        self.legend_bottom = 90
+        self.legend_middle = 45
         self.spacer=self.font_size/3
     
     def draw_motif(self, motif_class, height, start, stop, c):
@@ -132,32 +129,7 @@ class doodle:
 
             height=random.randint(int(self.level-self.surface_height/10), int(self.level+self.surface_height/10))
             self.draw_motif(motif_class, height, start, stop, c)
-            # try:
-            #     if start in range(int(motif_class.motif_positions[i-1][0]), int(motif_class.motif_positions[i-1][1])) or start in range(int(previous_positions[0][i-1][0]), int(previous_positions[0][i-1][1])):
-            #         height=height-5
-            #         self.draw_motif(motif_class, height, start, stop, c)
-            #     else:
-            #         height=self.level
-            #         self.draw_motif(motif_class, height, start, stop, c)
-            # except IndexError:
-            #     if start in range(int(previous_positions[0][i-1][0]), int(previous_positions[0][i-1][1])):
-            #         self.draw_motif(motif_class, height, start, stop, c)
-            #     else:
-            #         height=height-5
-            #         self.draw_motif(motif_class, height, start, stop, c)
-
-
-
-            # if i == 0:
-            #     self.draw_motif(motif_class, height, start, stop, c)
-            # elif start in range(int(motif_class.motif_positions[i-1][0]), int(motif_class.motif_positions[i-1][1])) or start in range(int(previous_positions[0][i-1][0]), int(previous_positions[0][i-1][1])):
-            #     height = height-5
-            #     self.draw_motif(motif_class, height, start, stop, c)
-            # else:
-            #     height=self.level
-            #     self.draw_motif(motif_class, height, start, stop, c)
                     
-
     def draw_intron(self, start, stop, c):
         '''draws introns on cairo surface.
         input: intron start (i.e. previous exons stop), intron stop (i.e. next exon start), y coordinate of cairo surface
@@ -169,12 +141,18 @@ class doodle:
         c.set_line_width(1)
         c.stroke()
 
+    def draw_name(self, contig_name, c):
+        c.move_to(0,self.level-60)
+        c.set_source_rgb(0,0,0)
+        c.show_text(contig_name)
+        c.stroke()
+
     def draw_exon(self, start, stop, fill_colors, border_colors, c):
         '''draws exons on cairo surface.
         input: exon start, exon stop, y coordinate of cairo surface (same as draw_intron)
         output: a rectangle proportional to actual exon'''
 
-        c.rectangle(start, self.level-self.surface_height/10, stop-start, self.surface_height/5)
+        c.rectangle(start, self.level-30, stop-start, 60)
         c.set_source_rgb(fill_colors[0],fill_colors[1],fill_colors[2])
         c.fill_preserve()
         c.set_source_rgb(border_colors[0], border_colors[1], border_colors[2])
@@ -198,7 +176,11 @@ class doodle:
         c.stroke()
 
     def draw_label(self, feature, i, fill_colors, border_colors,c):
-        c.rectangle(self.legend_start + i*self.label_width + self.spacer, self.legend_top + .5*self.legend_middle, self.font_size, self.font_size)
+        c.rectangle(self.legend_start + i*self.label_width + self.spacer, #left
+             self.legend_middle-7, #top
+             self.font_size, #right
+             20 #bottom
+             )
         c.set_source_rgb(fill_colors[0],fill_colors[1],fill_colors[2])
         c.fill_preserve()
         c.set_source_rgb(border_colors[0], border_colors[1], border_colors[2])
@@ -211,7 +193,7 @@ class doodle:
 
 
 for key in fasta_dictionary:
-    draw=doodle(max_motif_length)
+    draw = doodle(max_motif_length, 250) 
     gene = region(key, fasta_dictionary[key])
     draw.normalize(gene.exons)
     with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
@@ -220,7 +202,7 @@ for key in fasta_dictionary:
 
         draw.draw_legend()
 
-        # set font stuff
+        # set font parameters
         c.set_source_rgb(0, 0, 0)
         c.set_font_size(draw.font_size)
         c.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
@@ -229,6 +211,7 @@ for key in fasta_dictionary:
         draw.draw_label("Exon", label_number, gene.exon_color, gene.exon_border_color, c)
         label_number+=1
 
+        draw.draw_name(key,c)
         draw.draw_intron(0, gene.exons[0][0],c)
 
         for i in range( 0, len(gene.exons) ): 
@@ -240,9 +223,7 @@ for key in fasta_dictionary:
                 draw.draw_intron(gene.exons[i][1], draw.surface_width, c)
 
         for motiv in motifs_list:
-            previous_positions=[]
             moti = motif(motiv[0], gene.contig, motiv[1], motiv[2])
-            print(moti.motif_positions)
             if moti.motif_positions != []:
                 draw.draw_label(motiv[0], label_number, moti.color, moti.border_color, c)
                 label_number+=1
