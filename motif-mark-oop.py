@@ -12,11 +12,14 @@ def get_args():
     return parser.parse_args()
 args=get_args() 
 
-fasta_dictionary=bioinfo.fasta_reader(args.fasta_file)
+# grabs the contigs from input fasta file
+# header : contig
+fasta_dictionary = bioinfo.fasta_reader(args.fasta_file)
 
+# get max contig for normalizing lengths later on
 max_contig=(max([len(value) for value in fasta_dictionary.values()]))
 
-
+# get list of motifs and assign each of them random fill and border color
 with open(args.motifs_file) as f:
     motifs=f.read().splitlines()
     motifs_list = [(motif.upper(),
@@ -24,12 +27,26 @@ with open(args.motifs_file) as f:
         (random.uniform(0,1), random.uniform(0,1), random.uniform(0,1))) # assign random border color for each motif
         for motif in motifs
         ]
-    max_motif_length=(len(max(motifs_list)[0])) # find the longest motif, used in creating legend
+    
+    # find the longest motif, used in creating legend
+    max_motif_length=(len(max(motifs_list)[0])) 
 
-IUPAC = bioinfo.IUPAC # imports dictionary of all IUPAC symbols, e.g. 'H':'[ACT]'
+
+# import dictionary of all IUPAC symbols, e.g. 'H':'[ACT]'
+IUPAC = bioinfo.IUPAC 
 
 class region:
-    ''' insert docstring '''
+    ''' 
+    Creates class used for plotting introns and exons. 
+    Needs normalizng (doodle class function) before plotting.
+
+    Input: 
+        - header: Contig header (used for labeling plots) 
+        - contig: Contig sequence 
+    Output:
+        - length: Length of contig (used for drawing last intron)
+        - exons: list of [exon start, exon end] positions. 
+    '''
 
     __slots__ = ['contig', 'length', 'exons','introns', 'header']
 
@@ -38,36 +55,55 @@ class region:
         self.contig = contig
         self.length=len(contig)
         self.exons = self.find_exons()
-        self.introns = self.find_exons()
 
     def find_exons(self):
         i=0
         exons = []
         while True:
-            # update index of contig while the contig is lowercase (intron)
-            # once the contig is no longer lowercase record index as start of exon
             try:
+                # update index of contig while the contig is lowercase (intron)
                 while self.contig[i].islower():
                     i+=1
             # if the contig is over, break
             except IndexError:
                 break
+
+            # now that the contig is no longer lowercase, mark the start with the current index
             start=i
-            # update index of contig while the contig is uppercase (exon)
-            # once the contig is no longer uppercase record index as finish of exon
+
             try:
+                # update index of contig while the contig is uppercase (exon)
                 while self.contig[i].isupper():
                     i+=1
+
             # if the contig is over, record the final position as exon stop and break
             except IndexError:
                 stop=i-1
                 exons.append([start,stop])
                 break
+            # now the contig is no longer uppercase, mark the stop with the current index
             stop=i-1
+
+            # append the start and stop position of the exon
             exons.append([start,stop])
+
         return(exons)
-          
+
+
 class motif:
+    '''
+    Creates class used for plotting positions of a given motif across a contig.
+    Positions need normalizing (a doodle class function) before plotting.
+
+    Input:
+        - motif: Motif sequence, must be IUPAC nucleic acid notation (https://en.wikipedia.org/wiki/Nucleic_acid_notation)
+        - contig: Contig, most likely contig attribute from region class 
+        - color: Motif fill color for plotting
+        - border_color: Motif border color for plotting
+    Output:
+        - motif_positions: list of motif start and stop positions, including overlap, e.g.,
+            [ [start1, stop1], [start2, stop2], ... , [startN, stopN] ] 
+    '''
     __slots__=[ 'motif_positions','contig', 'motif', 'color','border_color']
     
     def __init__(self, motif, contig, colors, border_color):
@@ -80,18 +116,30 @@ class motif:
 
     def find_positions(self):
         motif_positions=[]
-        reg_list = [IUPAC[letter] for letter in self.motif.upper()] # break the motif into list, and sub each letter for IUPAC replacement
-        reg_pattern = ''.join(reg_list) # join the subbed list together into a string
-        # motif_positions = [[m.start(),m.end()] for m in re.finditer(reg_pattern, self.contig)]
+
+        # break the motif into list, and sub each letter for IUPAC replacement
+        reg_list = [IUPAC[letter] for letter in self.motif.upper()] 
+        
+        # join the subbed list together into a string
+        reg_pattern = ''.join(reg_list) 
+        
         left = 0
         while True:
+            # find the regex pattern in spliced string (splice by variable 'left')
             match = re.search(reg_pattern, self.contig[left:])
+            
+            # if there is no match, break
             if not match:
                 break
+            
+            # update the splice position
             left += match.start()+1
-            motif_positions.append([left, left+len(self.motif)])
+            
+            # append the [start, stop] to motif positions list
+            motif_positions.append([left-1, left+len(self.motif)-1])
 
         return(motif_positions)
+
 
 class doodle:
     '''still needs docstring'''
@@ -205,6 +253,7 @@ with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as
     label_number=0
     draw.draw_label("Exon", label_number, (0.5,0.5,0.5), (0,0,0), c)
     label_number+=1
+
     for motiv in motifs_list:
         draw.draw_label(motiv[0], label_number, motiv[1], motiv[2], c)
         label_number+=1
@@ -234,5 +283,3 @@ with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as
 
 
         surface.write_to_png(args.fasta_file + '.png')
-
- 
