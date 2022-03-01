@@ -243,20 +243,23 @@ class doodle:
 draw = doodle(max_motif_length,max_contig)
 with cairo.SVGSurface('example.svg', draw.surface_width, draw.surface_height) as surface:
     c = cairo.Context(surface)
-    # c.move_to(0, draw.level)
-    draw.draw_legend()
+    
     # set font parameters
     c.set_source_rgb(0, 0, 0)
     c.set_font_size(draw.font_size)
     c.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
     
+    # draw legend stuff
+    draw.draw_legend() # legend box
     label_number=0
-    draw.draw_label("Exon", label_number, (0.5,0.5,0.5), (0,0,0), c)
+    draw.draw_label("Exon", label_number, (0.5,0.5,0.5), (0,0,0), c) # legend exon
     label_number+=1
-
+    
+    # put motifs on legend
     for motiv in motifs_list:
         draw.draw_label(motiv[0], label_number, motiv[1], motiv[2], c)
         label_number+=1
+
 
     for h,key in enumerate(fasta_dictionary):
         
