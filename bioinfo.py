@@ -121,24 +121,3 @@ if __name__ == '__bioinfo__':
 	assert len(fasta_reader('fasta_reader_test.fa')) == 2; 'wrong fasta dictionary length'
 	assert len(fasta_reader('fasta_reader_test.fa')['>NODE_2']) == 5, 'wrong nucleotide length'
 
-
-import re
-class motif:
-    __slots__=['motifs', 'motif_positions','contig', 'motif_name', 'color']
-    
-    def __init__(self, motif, contig, colors):
-        self.contig=contig.upper()
-        self.motifs=motif
-        self.motif_name=motif
-        self.motif_positions=self.find_positions() 
-        self.color = colors
-
-    def find_positions(self):
-        # should change this list to dictionary with key being the actual motif sequence
-        motif_positions=[] # [ [[motif1 start, motif1 stop], [motif1 start2, motif1 stop2]], [[motif2 start1, motif2 stop1]], etc ]
-        reg_list = [IUPAC[letter] for letter in self.motifs.upper()] # break the motif into list, and sub each letter for IUPAC replacement
-        reg_pattern = ''.join(reg_list) # join the subbed list together into a string
-        for match in re.finditer(reg_pattern,self.contig):
-            motif_positions.append([match.start(), match.end()])
-        return(motif_positions)
-
