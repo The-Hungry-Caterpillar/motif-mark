@@ -25,7 +25,7 @@ Out:
 `Figure_1.fasta.png`:
 ![Figure_1.fasta.png](figures/Figure_1.fasta.png)
 
-or:
+or,
 
 `Figure_1.fasta.dark.png`:
 ![Figure_1.fasta.dark.png](figures/Figure_1.fasta.dark.png)
