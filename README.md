@@ -22,10 +22,10 @@ A really nice looking .png image of all input contigs and features. The motifs w
 ```python motif-mark-oop.py -f data/Figure_1.fasta -m data/Fig_1_motifs.txt```
 
 Out:
-`Figure_1.png`:
+`Figure_1.fasta.png`:
 ![Figure_1.fasta.png](figures/Figure_1.fasta.png)
 
 or:
 
-`Figure_1.dark.png`:
+`Figure_1.fasta.dark.png`:
 ![Figure_1.fasta.dark.png](figures/Figure_1.fasta.dark.png)
