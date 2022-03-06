@@ -19,4 +19,4 @@ A really nice looking .png image of all input contigs and features. The motifs w
 
 
 ## Example Usage
-```python motif-mark-oop.py -f test.fa -m Fig_1_motifs.txt```
+```python motif-mark-oop.py -f data/Figure_1.fasta -m data/Fig_1_motifs.txt```
