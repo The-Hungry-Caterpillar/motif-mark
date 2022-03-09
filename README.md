@@ -11,7 +11,7 @@ Now you're ready to use motif mark.
 
 ## Motif-mark Input
 * `-f`: input fasta file with lowercase representing introns and uppercase represting exons.
-* `-m`: input sequences of motifs, separated by new lines. Can be upper or lower case. Can be [ambiguously labeled](https://en.wikipedia.org/wiki/Nucleic_acid_notation)
+* `-m`: input sequences of motifs, separated by new lines. Can be upper or lower case. Can be [ambiguously labeled](https://en.wikipedia.org/wiki/Nucleic_acid_notation) (note that if your motif contains "U" then this code will look for "U" in the input fasta file, as noted in the linked wiki table.)
 * `-d`: pass this option to have the output suited to a dark background
 
 ## Output
