@@ -1,11 +1,10 @@
 import cairo
+import argparse
 import bioinfo
 import re
 import random
 
-
 def get_args():
-    import argparse
     parser = argparse.ArgumentParser(description = "this script outputs a map of motifs on a regions from a fasta file, exon sequence file, and motif marker files")
     parser.add_argument('-f', '--fasta_file', help='input fasta file to be mapped')
     parser.add_argument('-m', '--motifs_file', help='input motifs file')
